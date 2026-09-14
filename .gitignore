@@ -1,0 +1,21 @@
+# 依赖与临时环境
+node_modules/
+_qa-env/
+
+# 抓取缓存（13MB，不入库）
+data/.cache/
+
+# QA 截图与日志
+qa-shots/
+*.log
+
+# 生成物 / 中间产物
+tools/FILELIST.txt
+tools/ls.txt
+tools/SELFCHECK-REPORT.txt
+tools/legacy-city-copy.json
+tools/render-preview.svg
+
+# 系统
+.DS_Store
+Thumbs.db

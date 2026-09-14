@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="FY0ejIKnd0F8tNT575H6QF">
+<head data-page-node-id="ANvGq2z5ul4uvgrvKlRNet">
+  <meta charset="utf-8" data-page-node-id="59R8FdcQ4gOUlaweQR9mSS" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" data-page-node-id="FVsSgtMb3Adf7B5GqqvZcL" />
+  <title>国庆去哪儿 · 全国城市热度分布图</title>
+  <meta name="description" content="国庆假期全国 370+ 城市热度交互式地图：缩放、点击、筛选，找到人少又好玩的目的地。" data-page-node-id="pTMa4vqGTNNGtVSivaBj3J" />
+  <link rel="stylesheet" href="assets/styles.css" data-page-node-id="V9gNcWHMbX6x7eBDfSnTcw" />
+</head>
+<body data-page-node-id="p94nHwfQXaZX1FMwjYL6P0">
+  <div class="app" data-page-node-id="QKZpD2bWemuetl7gSReeXd">
+
+    <!-- ============ 顶部标题栏 ============ -->
+    <header class="topbar" data-page-node-id="LlTP18vsYMzPTXYaUDIyx6">
+      <div class="brand" data-page-node-id="9460D3pNtjPu94H3ZrTXDM">
+        <div class="brand-mark" data-page-node-id="udzFRhAFNrTpnropc03Et4">假</div>
+        <div class="brand-text" data-page-node-id="UvmA33F6ZJpX1hU9usFxBe">
+          <h1 data-page-node-id="j5nwb6jE5wbiwHND9VR3Ic">国庆去哪儿 · 全国城市热度地图</h1>
+          <p data-page-node-id="WXGysViDLASOpWiHs676DJ">哪儿人少又好玩？拖一拖、点一点，找到属于你的冷门目的地</p>
+        </div>
+      </div>
+      <div class="top-stats" id="top-stats" data-page-node-id="RqSFMjJ2iBT76E7ZQ5LXo9"></div>
+    </header>
+
+    <!-- ============ 数据口径声明（显著位置） ============ -->
+    <div class="notice-bar" data-page-node-id="a9RbS6EsicsD61WkTK0vap">
+      <span class="notice-tag" data-page-node-id="jBmutnBXlsVYMQzxetIUoE">数据说明</span>
+      <span class="notice-text" data-page-node-id="m0qFCuERQvLyQngBRhVNFu">
+        热度指数 ＝ <strong data-page-node-id="bGYzRNbOPV9gtpxU7POTTk">2025 年国庆假期（10 月 1 日 — 10 月 7 日）日均人口迁入规模指数</strong>，归一化到 0–100，数据源：<strong data-page-node-id="bGYzRNbOPV9gtpxU7POTT1">百度迁徙（百度地图慧眼）</strong>；同比为 2025 与 2024 年同期日均指数之差。
+        行政区划与底图：<strong data-page-node-id="ikXMxBoBj7WGwVrR8R1luC">阿里云 DataV.GeoAtlas（民政部行政区划标准）</strong>，台湾省、香港特别行政区、澳门特别行政区、南海诸岛作为中国领土的一部分完整呈现。
+        台湾省各地为省级汇总口径、覆盖有限，仅供参考；实际客流请以景区与交通部门官方发布为准。
+        <br />
+        另有 <strong>三峡专题点位（奉节 · 巫山 · 巴东 · 秭归）</strong>：这四个县级行政区百度迁徙无数据，改用地方政府官方发布的 2025 年国庆假日旅游统计，
+        <strong>四县统计口径互不相同、彼此不可比，也不与迁徙热度指数比较</strong>，故只展示官方原始数据、不参与热度排名。
+      </span>
+    </div>
+
+    <!-- ============ 主体三栏布局 ============ -->
+    <main class="layout" data-page-node-id="LVbU6HJ6fuLSHFzhjXuHbm">
+
+      <!-- ---------- 左侧：筛选控制面板 ---------- -->
+      <aside class="panel panel-left" data-page-node-id="DRSAJGq7opCc86FAIU79oe">
+        <section class="block" data-page-node-id="EiwlDgxF5jLEvZINQ6cnIF">
+          <h2 class="block-title" data-page-node-id="KEkFYBQvT0lvveOGUC94h0">搜索城市</h2>
+          <div class="search-box" data-page-node-id="b1bWcA0vDoKq4VDtHmFvpJ">
+            <input
+              id="search-input"
+              class="search-input"
+              type="text"
+              autocomplete="off"
+              placeholder="输入城市名，回车定位"
+              aria-label="搜索城市" data-page-node-id="tFPcVRE0Ux7CdqJLltAIgE" />
+            <button id="btn-clear-search" class="search-clear" type="button" title="清空" aria-label="清空搜索" data-page-node-id="SHGkJOlmJionXm1y67vJoV">×</button>
+            <ul id="search-suggest" class="suggest" hidden data-page-node-id="2DNZhEs28V3A7G5UbjyYXJ"></ul>
+          </div>
+        </section>
+
+        <section class="block" data-page-node-id="ygOpQ5atq4Eeq2b8Dz5Yb6">
+          <h2 class="block-title" data-page-node-id="26tF0vafMMSkqELJblmT7f">省级行政区</h2>
+          <select id="province-select" class="select" aria-label="按省份筛选" data-page-node-id="NzHOaTzmw0ecyQNyKFejT9"></select>
+        </section>
+
+        <section class="block" data-page-node-id="B4190SIyYtHFdbx61W3sj3">
+          <div class="block-title-row" data-page-node-id="NmebG0HNM26ea2zKzzclhl">
+            <h2 class="block-title" data-page-node-id="ybVGbf8ShBKRF0doYKXlt5">热度区间</h2>
+            <span class="ctrl-val" id="heat-val" data-page-node-id="pfCHJCZBnp8UTKYUpX4T9L">0 - 100</span>
+          </div>
+          <label class="slider-label" for="heat-min" data-page-node-id="4qoMvP42bCntyHpi3NPmtJ">最低热度 <b id="heat-min-val" data-page-node-id="hN0CptjAsxgLkEb1wQQx2c">0</b></label>
+          <input id="heat-min" class="slider" type="range" min="0" max="100" step="1" value="0" data-page-node-id="gdNzfm60ZLO9cr3AT8zOdV" />
+          <label class="slider-label" for="heat-max" data-page-node-id="U79ebPdAlMCRUEj1w0bfix">最高热度 <b id="heat-max-val" data-page-node-id="RMzAMvANHrmRLz8mrgUaQ6">100</b></label>
+          <input id="heat-max" class="slider" type="range" min="0" max="100" step="1" value="100" data-page-node-id="aEMEptbfLNyiYLtwcQQjS0" />
+          <div class="preset-row" id="preset-row" data-page-node-id="kiMXJ9rES4P4HZaVH53YVW">
+            <button class="chip" type="button" data-min="0" data-max="29" data-page-node-id="lS3T3ta7t14cqkfY2MOecU">冷清 &lt;30</button>
+            <button class="chip" type="button" data-min="30" data-max="49" data-page-node-id="dIifQPm6gABYTOnY1cINml">舒适 30-49</button>
+            <button class="chip" type="button" data-min="50" data-max="69" data-page-node-id="7Ps1Edupz6SeMZvtAH5onW">适中 50-69</button>
+            <button class="chip" type="button" data-min="70" data-max="84" data-page-node-id="9swc7imU88OIPxg1CYi77b">拥挤 70-84</button>
+            <button class="chip" type="button" data-min="85" data-max="100" data-page-node-id="KTvA4nMslavsUzNeKiFIFV">爆满 ≥85</button>
+          </div>
+        </section>
+
+        <section class="block" data-page-node-id="OMC9aoRJ5GWTRzEHrW5NP6">
+          <h2 class="block-title" data-page-node-id="MMcHmKdqYM5B1ATrESwCOB">快捷筛选</h2>
+          <div class="quick-row" id="quick-row" data-page-node-id="zKoYr5MrEbl23DweAdOETD"></div>
+        </section>
+
+        <section class="block" data-page-node-id="ymInuQYpSADUHvoIW3pXlv">
+          <button id="btn-reset-filter" class="ghost-btn full" type="button" data-page-node-id="J89ttjVMchO7P5UyJkcqEt">重置全部筛选</button>
+        </section>
+      </aside>
+
+      <!-- ---------- 中间：地图 ---------- -->
+      <section class="map-card" data-page-node-id="2nmzHKjji8DHbrc8bvGVcS">
+        <div class="map-head" data-page-node-id="gCEevDKDZA2Y2UvslC31HS">
+          <div data-page-node-id="ERKplHKB45lHs7S4ectn2z">
+            <div class="map-title" id="map-title" data-page-node-id="FM1yxBu1jLFDGCDUfHF60d">城市热度气泡</div>
+            <div class="map-sub" id="map-sub" data-page-node-id="mpLl8Fb5djz9VTMwcmXw5l">滚轮缩放 · 拖拽平移 · 点击城市看详情 · 点击省份可筛选</div>
+          </div>
+          <div class="seg" id="view-switch" role="tablist" aria-label="视图切换" data-page-node-id="XVm3O87RGratOC7T1TxHAG">
+            <button class="seg-btn is-active" type="button" data-view="scatter" role="tab" data-page-node-id="bW1zyxpB5iB3wVlx4QEfFj">城市热度气泡</button>
+            <button class="seg-btn" type="button" data-view="province" role="tab" data-page-node-id="lucStOCDeBmqwhTm7MjnIL">省份热度填充</button>
+          </div>
+        </div>
+
+        <div class="map-body" data-page-node-id="GLfrhAUHVD0Qvl8tQRdnZ5">
+          <div id="map" class="map" role="img" aria-label="全国城市国庆热度分布地图" data-page-node-id="TEuOWAHEMqJvc8ZjXNamPH"></div>
+          <div class="map-tools" data-page-node-id="B4MeD7HiD8AwGXcVdsNOMp">
+            <button id="btn-zoom-reset" class="tool-btn" type="button" title="缩放复位" data-page-node-id="0ptJuawQOmahVGSfTKsC7y">缩放复位</button>
+          </div>
+        </div>
+
+        <div class="map-legend" id="map-legend" data-page-node-id="zIOtc8F6BCfSZbDa69Vayv"></div>
+      </section>
+
+      <!-- ---------- 右侧：排行榜 + 详情 ---------- -->
+      <aside class="panel panel-right" data-page-node-id="8nmArIXuihHELMqROwPLgK">
+        <section class="block rank-block" data-page-node-id="CpNwv9g8z3jJBfnFFez0rj">
+          <div class="block-title-row" data-page-node-id="m2DSBYe1zIEQCxIkmqCKTH">
+            <h2 class="block-title" data-page-node-id="viJLMcqnZAEqVgiuNBr8sh">热度榜</h2>
+            <div class="seg seg-sm" id="rank-tabs" data-page-node-id="gMhECtr1QZ4tQvm1EqmvD2">
+              <button class="seg-btn is-active" type="button" data-mode="hot" data-page-node-id="2jYReDMRY0irNWcmGbo9Vf">最挤 TOP20</button>
+              <button class="seg-btn" type="button" data-mode="cool" data-page-node-id="ijFLY5rB5Y8DkH1uxiK5xV">最舒服 TOP20</button>
+            </div>
+          </div>
+          <ol class="rank-list" id="rank-list" data-page-node-id="vCdMynG8mrvaulBf3uVL3E"></ol>
+        </section>
+
+        <section class="block detail-block" data-page-node-id="agw1fYnkJbUBL6JoBMDayx">
+          <h2 class="block-title" data-page-node-id="Ocswz2k0BV8kj7yecbaloq">目的地详情</h2>
+          <div class="detail" id="detail" data-page-node-id="Q6uvqO9sgXIIimGQCMtesZ"></div>
+        </section>
+      </aside>
+
+    </main>
+  </div>
+
+  <!-- 依赖：本地 ECharts + 本地边界数据 + 本地城市数据 + 交互逻辑 -->
+  <script src="assets/echarts.min.js"></script>
+  <script src="data/geo.js"></script>
+  <script src="data/cities.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
