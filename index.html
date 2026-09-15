@@ -32,6 +32,9 @@
         <br />
         另有 <strong>三峡专题点位（奉节 · 巫山 · 巴东 · 秭归）</strong>：这四个县级行政区百度迁徙无数据，改用地方政府官方发布的 2025 年国庆假日旅游统计，
         <strong>四县统计口径互不相同、彼此不可比，也不与迁徙热度指数比较</strong>，故只展示官方原始数据、不参与热度排名。
+        <br />
+        本页另提供 <strong>住宿紧张度（HSI）</strong> 指标：以连锁酒店「假期价 ÷ 平日价」在同一年份内的百分位衡量供需紧张程度，
+        <strong>该指标可下沉到县级行政区</strong>，是替代专题做法的通用口径。它衡量的是「住宿有多紧张」，<strong>不等于客流规模</strong>，请与热度指数对照阅读。
       </span>
     </div>
 
@@ -98,7 +101,17 @@
           <div class="seg" id="view-switch" role="tablist" aria-label="视图切换" data-page-node-id="XVm3O87RGratOC7T1TxHAG">
             <button class="seg-btn is-active" type="button" data-view="scatter" role="tab" data-page-node-id="bW1zyxpB5iB3wVlx4QEfFj">城市热度气泡</button>
             <button class="seg-btn" type="button" data-view="province" role="tab" data-page-node-id="lucStOCDeBmqwhTm7MjnIL">省份热度填充</button>
+            <button class="seg-btn" type="button" data-view="quadrant" role="tab">量价四象限</button>
           </div>
+        </div>
+
+        <div class="metric-bar">
+          <span class="metric-label">当前指标</span>
+          <div class="seg seg-sm" id="metric-switch" role="tablist" aria-label="指标切换">
+            <button class="seg-btn is-active" type="button" data-metric="heat" role="tab" title="百度迁徙迁入规模：有多少人去">国庆热度（客流）</button>
+            <button class="seg-btn" type="button" data-metric="hsi" role="tab" title="连锁酒店假期溢价：住宿有多紧张">住宿紧张度（价格）</button>
+          </div>
+          <span class="metric-hint" id="metric-hint">衡量「有多少人去」</span>
         </div>
 
         <div class="map-body" data-page-node-id="GLfrhAUHVD0Qvl8tQRdnZ5">
@@ -137,6 +150,7 @@
   <script src="assets/echarts.min.js"></script>
   <script src="data/geo.js"></script>
   <script src="data/cities.js"></script>
+  <script src="data/hsi.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>

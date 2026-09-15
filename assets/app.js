@@ -122,6 +122,48 @@
   /** 三峡专题点位的专题色（区别于常规热度的冷暖渐变色带）。 */
   var OFFICIAL_COLOR = '#0d9488';
 
+  /** 住宿紧张指数（HSI）的色带：青（宽松）-> 琥珀 -> 红（一房难求）。 */
+  var HSI_COLORS = ['#3aa0ff', '#4fc3a1', '#ffd166', '#f4925d', '#e4573d', '#9e1b32'];
+
+  /** HSI 五档语义（与数值区间一致，仅用于文案与图例）。 */
+  var HSI_LEVELS = [
+    { min: 85, label: '一房难求', color: '#9e1b32', desc: '住宿极度紧张，务必提前订' },
+    { min: 70, label: '明显溢价', color: '#e4573d', desc: '假期房价大幅上浮' },
+    { min: 50, label: '温和上涨', color: '#f4925d', desc: '价格有上浮但可接受' },
+    { min: 30, label: '基本平稳', color: '#4fc3a1', desc: '房价与平日接近' },
+    { min: 0, label: '价格洼地', color: '#3aa0ff', desc: '几乎不涨价，性价比高' }
+  ];
+
+  /** 两个可切换指标的配置。 */
+  var METRICS = {
+    heat: {
+      key: 'heat',
+      label: '国庆热度',
+      unit: '客流强度',
+      colors: HEAT_COLORS,
+      levels: CROWD_LEVELS,
+      text: ['爆满 100', '冷清 0'],
+      desc: '百度迁徙迁入规模，衡量「有多少人去」'
+    },
+    hsi: {
+      key: 'hsi',
+      label: '住宿紧张度',
+      unit: 'HSI',
+      colors: HSI_COLORS,
+      levels: HSI_LEVELS,
+      text: ['一房难求 100', '价格洼地 0'],
+      desc: '连锁酒店假期溢价，衡量「住宿有多紧张」'
+    }
+  };
+
+  /**
+   * HSI 口径说明（任何时候展示 HSI 都要带上，避免被误读成人多）。
+   * 跨年只比排名不比数值：各年样本品牌与采集日期不同。
+   */
+  var HSI_NOTE = '住宿紧张度（HSI）＝ 连锁酒店「假期价 ÷ 平日价」在同一年份内的百分位。'
+    + '它衡量的是供需紧张程度，不是客流规模：小城房源少也可能涨幅很高。'
+    + '跨年只比排名、不比数值。';
+
   /* ======================================================================
    * 1. 运行时状态
    * ==================================================================== */
@@ -135,6 +177,7 @@
     quick: '',              // QUICK_FILTERS 中的 key，'' 表示未启用
     selected: '',           // 当前选中的城市名
     rankMode: 'hot',        // 'hot' 最挤 | 'cool' 最舒服
+    metric: 'heat',         // 'heat' 国庆热度（客流） | 'hsi' 住宿紧张度（价格）
     mapCenter: null,        // [lng, lat] 或 null（自动居中）
     mapZoom: DEFAULT_ZOOM
   };
@@ -305,6 +348,53 @@
    * @param {string} keyword 关键词（已 trim）。
    * @returns {boolean} 是否命中。
    */
+  /**
+   * 取城市的住宿紧张指数样本。
+   * ⚠️ 只用「主年份」：HSI 是年内百分位，跨年混排不严谨。
+   *    历史年份数据只在详情页作为参考展示。
+   * @param {Object} city 城市对象。
+   * @returns {Object|null} HSI 记录，无数据返回 null。
+   */
+  function hsiOf(city) {
+    if (!window.HSI || !city) { return null; }
+    return window.HSI.primary(city.name);
+  }
+
+  /**
+   * 取城市在当前指标下的数值。HSI 指标下无样本的城市返回 null（会被过滤掉）。
+   * @param {Object} city 城市对象。
+   * @returns {number|null} 0-100 的数值。
+   */
+  function metricOf(city) {
+    if (state.metric === 'hsi') {
+      var h = hsiOf(city);
+      return h ? h.hsi : null;
+    }
+    return city.heat;
+  }
+
+  /**
+   * 当前指标的分档色。
+   * @param {number} value 0-100 数值。
+   * @returns {string} 颜色。
+   */
+  function metricColor(value) {
+    return heatColor(value);
+  }
+
+  /**
+   * 按当前指标给出分档标签（爆满 / 一房难求 …）。
+   * @param {number} value 0-100 数值。
+   * @returns {{label: string, color: string, desc: string}} 分档。
+   */
+  function metricLevel(value) {
+    var levels = METRICS[state.metric].levels;
+    for (var i = 0; i < levels.length; i++) {
+      if (value >= levels[i].min) { return levels[i]; }
+    }
+    return levels[levels.length - 1];
+  }
+
   function matchKeyword(city, keyword) {
     if (!keyword) { return true; }
     return city.name.indexOf(keyword) !== -1 || city.province.indexOf(keyword) !== -1;
@@ -322,7 +412,14 @@
     for (var i = 0; i < list.length; i++) {
       var c = list[i];
       if (state.province !== 'all' && c.province !== state.province) { continue; }
-      if (c.heat < state.heatMin || c.heat > state.heatMax) { continue; }
+      // HSI 指标下：没有酒店价格样本的城市不参与（地图与榜单一并隐藏，避免出现空值点位）
+      if (state.metric === 'hsi') {
+        var h = hsiOf(c);
+        if (!h) { continue; }
+        if (h.hsi < state.heatMin || h.hsi > state.heatMax) { continue; }
+      } else if (c.heat < state.heatMin || c.heat > state.heatMax) {
+        continue;
+      }
       if (quick && !quick.test(c)) { continue; }
       if (!matchKeyword(c, keyword)) { continue; }
       result.push(c);
@@ -639,7 +736,8 @@
     var normalData = [];
     var officialData = [];
     cities.forEach(function (c) {
-      var item = { name: c.name, value: [c.lng, c.lat, c.heat], city: c };
+      var v = state.metric === 'hsi' ? (hsiOf(c) ? hsiOf(c).hsi : c.heat) : c.heat;
+      var item = { name: c.name, value: [c.lng, c.lat, v], city: c };
       if (c.src === 'official') { officialData.push(item); } else { normalData.push(item); }
     });
 
@@ -747,10 +845,10 @@
         itemWidth: 12,
         itemHeight: 116,
         calculable: false,
-        text: ['爆满 100', '冷清 0'],
+        text: METRICS[state.metric].text,
         textGap: 8,
         textStyle: { color: '#6b7280', fontSize: 11 },
-        inRange: { color: HEAT_COLORS },
+        inRange: { color: METRICS[state.metric].colors },
         formatter: function (value) { return String(Math.round(value)); }
       },
       geo: buildGeoOption(stats),
@@ -759,16 +857,110 @@
   }
 
   /**
-   * 渲染 / 更新地图（不重建实例，视图切换时使用 replaceMerge 清理旧组件）。
+   * 构建「量价四象限」散点图：横轴客流强度、纵轴住宿紧张度。
+   * 两个维度交叉后能区分出「人多」与「房贵」这两种完全不同的拥挤——
+   * 例如深圳客流很大但房价平稳，阳朔客流不大却一房难求。
+   * @returns {Object} option。
+   */
+  function buildQuadrantOption() {
+    var rows = [];
+    var withHsi = 0;
+    (window.CITIES || []).forEach(function (c) {
+      if (c.src === 'official') { return; }
+      if (state.province !== 'all' && c.province !== state.province) { return; }
+      var h = hsiOf(c);
+      if (!h || h.hsi == null) { return; }
+      withHsi += 1;
+      rows.push({ name: c.name, value: [c.heat, h.hsi], city: c, hsi: h });
+    });
+
+    var year = window.HSI ? window.HSI.primaryYear : '';
+    return {
+      backgroundColor: 'transparent',
+      textStyle: { fontFamily: '"PingFang SC","Microsoft YaHei",sans-serif' },
+      title: {
+        text: '客流强度 × 住宿紧张度（' + year + ' 年样本 ' + withHsi + ' 城）',
+        subtext: '横轴＝国庆热度指数（有多少人去）　纵轴＝HSI（住宿有多紧张）　点击圆点查看详情',
+        left: 'center',
+        top: 6,
+        textStyle: { fontSize: 13, color: '#374151', fontWeight: 500 },
+        subtextStyle: { fontSize: 11, color: '#6b7280' }
+      },
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderColor: '#e6e8ee',
+        borderWidth: 1,
+        padding: [10, 12],
+        extraCssText: 'box-shadow:0 12px 32px rgba(16,24,40,.14);border-radius:12px;',
+        formatter: function (p) {
+          var c = p.data.city;
+          var h = p.data.hsi;
+          var hl = metricLevel(h.hsi);
+          return '<div style="font-size:13px;font-weight:600;color:#111827;margin-bottom:4px">'
+            + esc(c.name) + ' <span style="color:#6b7280;font-weight:400">' + esc(c.province) + '</span></div>'
+            + '<div style="font-size:12px;color:#4b5563;line-height:1.7">'
+            + '客流强度 <b>' + c.heat + '</b> / 100<br />'
+            + '住宿紧张度 <b style="color:' + hl.color + '">' + h.hsi + '</b> / 100 · ' + esc(hl.label) + '<br />'
+            + esc(h.hotel) + '：¥' + h.p0 + ' → ¥' + h.p1 + '（+' + h.pct + '%）</div>';
+        }
+      },
+      grid: { left: 58, right: 30, top: 62, bottom: 52 },
+      xAxis: {
+        type: 'value', min: 0, max: 100,
+        name: '迁徙客流强度 →', nameLocation: 'middle', nameGap: 28,
+        nameTextStyle: { color: '#6b7280', fontSize: 12 },
+        axisLine: { lineStyle: { color: '#d1d5db' } },
+        splitLine: { lineStyle: { color: '#f1f3f8' } }
+      },
+      yAxis: {
+        type: 'value', min: 0, max: 100,
+        name: '住宿紧张度 HSI →', nameLocation: 'middle', nameGap: 40,
+        nameTextStyle: { color: '#6b7280', fontSize: 12 },
+        axisLine: { lineStyle: { color: '#d1d5db' } },
+        splitLine: { lineStyle: { color: '#f1f3f8' } }
+      },
+      series: [
+        {
+          id: 'quadrant',
+          type: 'scatter',
+          data: rows,
+          symbolSize: 13,
+          itemStyle: {
+            color: function (p) { return metricLevel(p.data.value[1]).color; },
+            opacity: 0.86, borderColor: '#ffffff', borderWidth: 1
+          },
+          emphasis: { scale: 1.4, itemStyle: { borderColor: '#111827', borderWidth: 2, opacity: 1 } },
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            lineStyle: { color: '#c9cedb', type: 'dashed', width: 1 },
+            label: { show: false },
+            data: [{ xAxis: 50 }, { yAxis: 50 }]
+          }
+        }
+      ],
+      graphic: [
+        { type: 'text', left: 74, top: 74, style: { text: '小众爆满 · 房源紧俏', fill: '#993C1D', fontSize: 12 } },
+        { type: 'text', right: 44, top: 74, style: { text: '顶流热门 · 人财两旺', fill: '#993C1D', fontSize: 12 } },
+        { type: 'text', left: 74, bottom: 64, style: { text: '真正冷清 · 量价皆平', fill: '#888780', fontSize: 12 } },
+        { type: 'text', right: 44, bottom: 64, style: { text: '承载力强 · 量大价稳', fill: '#185FA5', fontSize: 12 } }
+      ]
+    };
+  }
+
+  /**
+   * 渲染 / 更新地图（不重建实例，视图切换时使用 notMerge 清理旧组件）。
    * @returns {void}
    */
   function renderChart() {
     if (!chart) { return; }
-    var option = buildChartOption();
+    var option = state.view === 'quadrant' ? buildQuadrantOption() : buildChartOption();
     if (lastView === state.view) {
       chart.setOption(option);
     } else {
-      chart.setOption(option, { replaceMerge: ['geo', 'series'] });
+      // 四象限是直角坐标系、地图是 geo 坐标系，两者组件完全不同，必须整体替换
+      chart.setOption(option, true);
       lastView = state.view;
     }
   }
@@ -799,22 +991,33 @@
    * @returns {void}
    */
   function renderLegend(cities) {
+    var levels = METRICS[state.metric].levels;
     var counts = {};
-    CROWD_LEVELS.forEach(function (lv) { counts[lv.label] = 0; });
-    cities.forEach(function (c) { counts[c.crowd] = (counts[c.crowd] || 0) + 1; });
+    levels.forEach(function (lv) { counts[lv.label] = 0; });
+    cities.forEach(function (c) {
+      var v = state.metric === 'hsi' ? (hsiOf(c) ? hsiOf(c).hsi : null) : c.heat;
+      if (v == null) { return; }
+      counts[metricLevel(v).label] = (counts[metricLevel(v).label] || 0) + 1;
+    });
 
-    var levels = CROWD_LEVELS.map(function (lv) {
+    var chips = levels.map(function (lv) {
       return '<span class="legend-level">' +
         '<i class="legend-dot" style="background:' + lv.color + '"></i>' +
         esc(lv.label) + ' <b>' + (counts[lv.label] || 0) + '</b></span>';
     }).join('');
 
+    var isHsi = state.metric === 'hsi';
+    var scale = isHsi
+      ? '<div class="legend-scale"><span>0 价格洼地</span><span>100 一房难求</span></div>'
+      : '<div class="legend-scale"><span>0 冷清</span><span>100 爆满</span></div>';
+
     el.mapLegend.innerHTML = [
       '<div class="legend-block">',
       '<div class="legend-bar"></div>',
-      '<div class="legend-scale"><span>0 冷清</span><span>100 爆满</span></div>',
+      scale,
       '</div>',
-      '<div class="legend-levels">' + levels + '</div>'
+      '<div class="legend-levels">' + chips + '</div>',
+      isHsi ? '<div class="legend-note">' + esc(HSI_NOTE) + '</div>' : ''
     ].join('');
   }
 
@@ -825,29 +1028,37 @@
    */
   function renderRank(cities) {
     var desc = state.rankMode === 'hot';
+    var isHsi = state.metric === 'hsi';
     // 省级汇总口径的城市默认不进榜单；只有当筛选结果里「只剩下」这类城市时
     //（例如省份筛选选了台湾省）才回退为展示它们，并附一行口径提示，避免榜单空白。
-    var rankable = cities.filter(isRankableCity);
-    var pool = rankable.length ? rankable : cities;
-    var top = sortByHeat(pool, desc).slice(0, RANK_SIZE);
+    // HSI 指标下改为「没有酒店价格样本的城市不进榜单」。
+    var pool = cities.filter(function (c) { return isHsi ? !!hsiOf(c) : isRankableCity(c); });
+    var fallback = !pool.length;
+    if (fallback) { pool = cities.slice(); }
+    var val = function (c) { return isHsi ? hsiOf(c).hsi : c.heat; };
+    var top = isHsi
+      ? pool.slice().sort(function (a, b) { return desc ? val(b) - val(a) : val(a) - val(b); }).slice(0, RANK_SIZE)
+      : sortByHeat(pool, desc).slice(0, RANK_SIZE);
     if (!top.length) {
       el.rankList.innerHTML = '<li class="rank-empty">当前筛选条件下没有匹配的目的地</li>';
       return;
     }
-    var note = rankable.length
-      ? ''
-      : '<li class="rank-note">' + esc(SRC_PROVINCE_NOTE) + '</li>';
+    var note = isHsi
+      ? '<li class="rank-note">' + esc(HSI_NOTE) + '</li>'
+      : (fallback ? '<li class="rank-note">' + esc(SRC_PROVINCE_NOTE) + '</li>' : '');
     el.rankList.innerHTML = note + top.map(function (c, i) {
-      var color = heatColor(c.heat);
+      var v = isHsi ? hsiOf(c).hsi : c.heat;
+      var color = metricColor(v);
+      var sub = isHsi ? (c.province + ' · ' + metricLevel(v).label) : (c.province + ' · ' + c.crowd);
       var active = c.name === state.selected ? ' is-active' : '';
       return [
         '<li class="rank-item' + active + '" data-name="' + esc(c.name) + '">',
         '<span class="rank-no">' + (i + 1) + '</span>',
         '<span class="rank-main">',
-        '<span class="rank-name">' + esc(c.name) + '<em>' + esc(c.province) + ' · ' + esc(c.crowd) + '</em></span>',
-        '<span class="rank-bar"><i style="width:' + c.heat + '%;background:' + color + '"></i></span>',
+        '<span class="rank-name">' + esc(c.name) + '<em>' + esc(sub) + '</em></span>',
+        '<span class="rank-bar"><i style="width:' + v + '%;background:' + color + '"></i></span>',
         '</span>',
-        '<span class="rank-heat" style="color:' + color + '">' + c.heat + '</span>',
+        '<span class="rank-heat" style="color:' + color + '">' + (Math.round(v * 10) / 10) + '</span>',
         '</li>'
       ].join('');
     }).join('');
@@ -904,6 +1115,35 @@
         + '<div class="detail-meta">数据来源：' + esc(city.official.source) + '（2025 年国庆假日统计）</div>'
       : (rawText ? '<div class="detail-meta">原始迁入规模指数 ' + esc(rawText) + '（热度由该指数归一化换算）</div>' : '');
 
+    // 住宿紧张度（HSI）：有酒店价格样本就展示，与热度指数并列呈现，便于「量 vs 价」对照。
+    var hsiBlock = '';
+    var hRec = hsiOf(city);
+    if (hRec && !isOfficial && hRec.hsi != null) {
+      var hl = metricLevel(hRec.hsi);
+      var ym = (window.HSI.yearMeta && window.HSI.yearMeta[hRec.y]) || {};
+      hsiBlock = [
+        '<div class="detail-label">住宿紧张度 HSI · ' + hRec.y + '</div>',
+        '<div class="detail-text">',
+        '<b style="color:' + hl.color + '">' + hRec.hsi + ' / 100 · ' + esc(hl.label) + '</b><br />',
+        esc(hRec.hotel) + '：平日 ¥' + hRec.p0 + ' → 假期 ¥' + hRec.p1 + '，',
+        '涨幅 <b>' + hRec.pct + '%</b>（约 ' + (Math.round(hRec.raw * 10) / 10) + ' 倍）',
+        '</div>',
+        '<div class="detail-meta">' + esc(HSI_NOTE) + '</div>',
+        '<div class="detail-meta">样本口径：' + esc(ym.brand || '—') + '　'
+          + esc(ym.baseline || '') + (ym.holiday ? ' vs ' + esc(ym.holiday) : '') + '　来源：' + esc(ym.source || '—') + '</div>'
+      ].join('');
+
+      // 历史年份样本：口径不同，只作参考，明确标注不可与主年份直接比较
+      var hist = window.HSI.historyOf ? window.HSI.historyOf(city.name) : [];
+      if (hist.length) {
+        hsiBlock += '<div class="detail-meta">历史参考（口径不同，不与 ' + hRec.y + ' 年直接比较）：'
+          + hist.map(function (r) {
+            return r.y + ' 年 HSI ' + r.hsi + '（' + esc(r.hotel) + ' ¥' + r.p0 + '→¥' + r.p1 + '，+' + r.pct + '%）';
+          }).join('　|　')
+          + '</div>';
+      }
+    }
+
     el.detail.innerHTML = [
       '<div class="detail-head">',
       '<span class="detail-name">' + esc(city.name) + '</span>',
@@ -916,6 +1156,7 @@
       scoreBlock,
       noteBlock,
       officialBlock,
+      hsiBlock,
       '<div class="detail-tags">' + tags + '</div>',
       '<div class="detail-label">国庆体验</div>',
       '<div class="detail-text">' + esc(city.reason) + '</div>',
@@ -982,7 +1223,27 @@
       btn.classList.toggle('is-active', btn.getAttribute('data-mode') === state.rankMode);
     });
 
-    el.mapTitle.textContent = state.view === 'province' ? '省份热度填充' : '城市热度气泡';
+    if (el.metricSwitch) {
+      Array.prototype.forEach.call(el.metricSwitch.querySelectorAll('.seg-btn'), function (btn) {
+        var on = btn.getAttribute('data-metric') === state.metric;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+        // 四象限视图同时用到两个指标，此时两个按钮都高亮
+        if (state.view === 'quadrant') { btn.classList.add('is-active'); }
+      });
+    }
+
+    if (el.metricHint) {
+      el.metricHint.textContent = state.view === 'quadrant'
+        ? '横轴＝客流强度，纵轴＝住宿紧张度，点击圆点看详情'
+        : METRICS[state.metric].desc;
+    }
+
+    el.mapTitle.textContent = state.view === 'quadrant'
+      ? '量价四象限'
+      : (state.view === 'province'
+        ? '省份热度填充'
+        : (state.metric === 'hsi' ? '住宿紧张度气泡' : '城市热度气泡'));
   }
 
   /**
@@ -1104,6 +1365,17 @@
       state.view = btn.getAttribute('data-view');
       renderAll();
     });
+
+    // ---- 指标切换（国庆热度 / 住宿紧张度）----
+    if (el.metricSwitch) {
+      el.metricSwitch.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('.seg-btn');
+        if (!btn) { return; }
+        state.metric = btn.getAttribute('data-metric');
+        if (state.view === 'quadrant') { state.view = 'scatter'; }
+        renderAll();
+      });
+    }
 
     // ---- 排行榜模式切换 ----
     el.rankTabs.addEventListener('click', function (ev) {
@@ -1276,6 +1548,8 @@
     el.mapTitle = document.getElementById('map-title');
     el.mapLegend = document.getElementById('map-legend');
     el.viewSwitch = document.getElementById('view-switch');
+  el.metricSwitch = document.getElementById('metric-switch');
+  el.metricHint = document.getElementById('metric-hint');
     el.zoomReset = document.getElementById('btn-zoom-reset');
     el.provinceSelect = document.getElementById('province-select');
     el.heatMin = document.getElementById('heat-min');
